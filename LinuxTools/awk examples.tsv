@@ -1,0 +1,135 @@
+假设我们有一个不合法格式的csv文件如下：
+
+cat << EOF >staff.csv
+Country Name Age
+US Gavo 35
+US Jane 21
+US Bill 25
+China Jimmy 42
+EOF
+查询
+查询列
+最基本的用法就是过滤出某列来：
+awk '{print $1}' staff.csv
+
+其中的大括号表示一个动作，print就是一个打印的动作。$1代表第1列，$0代表所有列。所以以下的命令也很好理解：
+awk '{print $3}' staff.csv
+awk '{print $0}' staff.csv
+awk '{print $1 $2}' staff.csv       # 中间的字符不管用
+awk '{print $1" "$1}' staff.csv     # 加引号才生效
+awk '{print NR FS NF}' staff.csv    # NR代表行号，FS代表分隔符，NF代表列数
+awk '{print $(NF-1)}' staff.csv     # 支持计算，加上$代表列内容
+我们可以把这个不合法的csv文件变得合法：
+
+awk '{print $1","$2","$3 > "staff.csv"}' staff.csv
+cat staff.csv
+注意这里awk的语法：写文件是在大括号里面，而不是外面。当然外面也是可以的，只要别和staff.csv重名就好。
+
+分隔符
+现在再来一次awk '{print $1}' staff.csv，就会发现awk无视逗号，把一整行都当成第一列了。可以用以下命令指定分隔符：
+awk -F"," '{print $1,$2}' staff.csv             # -F必须写在前面，双引号可以省略，变成-F,
+awk '{print $1,$2}' FS="," staff.csv            # FS必须写在后面，双引号可以省略，变成FS=,
+awk '{print $1,$2}' FS="," OFS=":" staff.csv    # OFS指定输出分隔符
+上面最后一个命令中，虽然OFS指定了输出分隔符，但是需要在$1和$2中间加上这个分隔符才能生效。另外，有时候省略双引号会出错的，比如对于|这个符号来说，有“或者”的意思，可能有歧义，所以还是加上双引号比较稳妥。
+
+条件
+awk支持丰富的条件语法以及正则表达式匹配：
+awk 'NR==1{print $3}' FS=, staff.csv                     # 打印第1行第3列
+awk 'NR!=1{print $3}' FS=, staff.csv                     # 打印所有行的第3列，除了第1行
+awk '/Gavo/{print $3}' FS=, staff.csv                    # 打印Gavo的Age
+awk '/Gavo|Jane/{print $0}' FS=, staff.csv               # 打印Gavo或Jane的记录
+awk '$3>40{print $0}' FS=, staff.csv                     # 打印40岁以上的记录，注意这里表头也按字符串来比较了
+awk '/Gavo/ || $3>40{print $0}' FS=, staff.csv           # 打印Gavo或40岁以上的记录
+awk '$1 ~ /US/{print $0}' FS=, staff.csv                 # 打印第1列为US的所有记录
+awk '$3 ~ /^2/{print $0}' FS=, staff.csv                 # 打印第三列以2开头的所有记录，即所有二十多岁的记录
+awk '/Gavo/{print $0}/Jane/{print $2}' FS=, staff.csv    # 打印Gavo的整行记录并打印Jane的第二列
+还支持在动作里写更复杂的条件：
+awk '{if (NR==1) print $0;}{print $2}' FS=, staff.csv    # 打印第1行和所有行的第2列
+awk 'c=(NR==1){print $0} !c{print $2}' FS=, staff.csv    # 简易版的if else，把条件赋值给变量c
+awk '(NR==1){print $0;next}{print $2}' FS=, staff.csv    # next的意思是跳过后面的命令（print $2）
+awk '{r=(NR==1)?$0:$2; print r}' FS=, staff.csv          # 三目赋值运算符
+以上命令的后三条的效果是一样的。下面是大招：条件表达式的这一套全齐了：
+awk '{if (NR==1) {print $1;} else if (NR==2) {print $2} else {print $3}}' FS=, staff.csv
+传参
+为了命令简单起见，我们再把csv文件换成最早那个但是去掉表头：
+cat << EOF >staff.csv
+US Gavo 35
+US Jane 21
+US Bill 25
+China Jimmy 42
+EOF
+入参
+过了一年，要把所有人的Age都加上一岁：
+
+1
+2
+awk '{print $3}' staff.csv
+awk '{print $3+1}' staff.csv
+如果这个一岁是个变量，那就这么做：
+age=1
+awk -v value=$age '{print $3+value}' staff.csv
+awk '{print $3+value}' value=$age staff.csv
+如果这个一岁是个环境变量，那就这么做：
+export AGE=1
+awk '{print $3+ENVIRON["AGE"]}' staff.csv
+出参
+如果我们想拿到Jane和Bill的Age，怎么做呢？
+value=`awk '{if($2=="Jane")print "jane_age="$3;if($2=="Bill")print "bill_age="$3}' staff.csv`
+echo $value
+eval $value
+echo $jane_age
+echo $bill_age
+这个方案的思路是在awk里拼命令，然后出来执行。
+
+统计
+求和
+求所有人的年龄总和：
+awk '{s+=$3}END{print s}' staff.csv
+awk '{s+=$3;print $2":"$3}END{print "SUM:"s}' staff.csv
+求平均
+下一个命令可以求平均值，也就是求和之后除以行数NR：
+awk '{a+=$3}END{print a/NR}' staff.csv
+如果没有END，awk会在每处理一行之后打印一次。
+
+去重
+查看所有的国家，去除重复项目：
+awk '{a[$1];}END{for (i in a)print i}' staff.csv
+awk '{print $1}' staff.csv | uniq                   # 用这个多简单
+上面第一个命令比较复杂：a[$1]是awk的数组（其实是字典），a["US"]=1意味着在a的数组里，"US"的值为1。在这里并没有用到它的值，而是利用了字典的键不能重复的原理。后面有一个for循环，把字典的键都打印出来。如果要打印值，用a[i]就好了。比如下面这个打印每个国家的总年龄：
+awk '{a[$1]+=$3;}END{for (i in a)print a[i]}' staff.csv
+文件处理
+分割文件
+还是以上面那个文件为例：
+cat << EOF >staff.csv
+US Gavo 35
+US Jane 21
+US Bill 25
+China Jimmy 42
+EOF
+将不同国家的记录写到不同文件中：
+awk '{print > $1".csv"}' staff.csv
+ls
+cat China.csv
+cat US.csv
+这回看起来好简单啊。print默认打印出整行，所以可以省略$0。
+每两行写一个文件：
+awk 'NR%2==1{f=++i".csv";}{print > f}' staff.csv
+ls
+cat 1.csv
+cat 2.csv
+把多余文件删掉：
+rm !(staff.csv)
+ls
+増删改列
+先看下面这个命令：
+awk '{$1=++i FS $1}1' staff.csv
+它在每行的前面增加了行号。关于$1=++i FS $1，以第一行为例：++i为1，FS为分隔符，$1为第一列，这三项结合起来赋值给前面的$1，所以第一列就变成了1 US。后面的1代表True，是整行打印的意思，也可以用{print $0}来代替。所以：
+awk '{$(NF+1)=++i}1' staff.csv                        # 最后一列加一列
+awk '{$(NF+1)=++i FS NF}1' staff.csv                  # 最后一列加两列
+awk '{$NF=++i FS $NF}1' staff.csv                     # 倒数第二列加一列
+awk '{$2=toupper($2)}1' staff.csv                     # Name列变大写，tolower就是变小写
+awk '{$2=substr($2,0,3)}1' staff.csv                  # Name列截前3个字符
+awk '{$2=""}1' staff.csv                              # 清空Name列
+awk '{NF=2}1' staff.csv                               # 删除最后一列
+awk '{for(i=1;i<NF;i++)$i=$(i+1);NF=2}1' staff.csv    # 删除第一列
+awk '{$2=$2$3;NF=2}1' staff.csv                       # 合并最后两列

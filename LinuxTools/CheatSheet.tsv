@@ -1,0 +1,55 @@
+
+cat filename | wc -l				# 统计行数
+cat filename | less					# 查看文件内容 (q to quit)
+cat filename -n						# 加行号显示
+od -c filename						# print file as ASCII
+head -n4 filename					# show first 4 lines
+head -n-4 filename					# show lines without the last 4 lines
+tail -n4 filename
+tail -n+4 filename					# show frome 4th line to the end
+ls -lR								# All folders subfolders, files… (小埃卢 小爱死  小艾露 大R  ) 	
+
+
+sort filename						# sort (alphabetical order)
+sort -k2,2 -t \t filename 			# Sort the 2nd col to 2nd col, with separator 
+sort -n filename 					# Sort(number order) 
+sort -k2,2n -t \t filename 			# Sort(number order on specific col) 
+sort -b -k2,2 filename 				# Sort(with -b) ignore leading blanks 
+sort -u filename 					# Sort (with -u) delete duplicate 
+sort myfile.txt | uniq -u			# List only the unique lines
+sort myfile.txt | uniq -d			# List only the duplicate lines
+sort myfile.txt | uniq -uc			# List only the unique lines & get count
+sort myfile.txt | uniq -dc			# List only the duplicate lines & get count
+
+cut -f3,6-8 filename 				# Cut(output cols 3 and 6 7 8) 
+cut -d" " -f5,1 filename 			# Cut (space is field delimiter) 
+
+
+## grep ##
+
+# http://www.cnblogs.com/end/archive/2012/02/21/2360965.html  grep summary
+cut -f2,6 spring_ms | grep EE[0-9] | uniq > ~/eecourse 					# grep example
+grep -v "ThisWord" example.txt 											# Grep  , 不包含 
+grep -r /local/Multimedia/GDIAns/SOFT/V3/Features/    					# 查找当前文件夹，子文件夹里，文件内容包含 字符串“/local….” 的 文件。这里的字符串可以是正则表达式 
+ls -lR | grep 'output*\|Log' 											# 查找当前文件夹，子文件夹里，文件名包含 字符串“output1” 的 文件。这里的字符串可以是正则表达式 
+grep 'script\|abudkar' FeaturesPipeline_temp.xml >> featurepipeline 	# Grep 两个条件的 OR 
+grep -v $'\thttp' Calcium_enus_forceTrigger_output2.tsv >> temp.tsv 	# match tab
+
+
+## sed ##
+# http://qinghua.github.io/sed/
+
+sed -i "s/$/\t1/" input.txt 		# Sed 给文件加一个column 
+sed 1d file.txt > file.txt 			# remove header
+
+## awk ##
+# http://qinghua.github.io/awk/
+# https://coolshell.cn/articles/9070.html							# awk 简明教程 *****
+cut -f1 test.txt | sed 1d | awk '{print tolower($0)}' | uniq 		# 拿第一列，去header，lowercase，去重 
+cat file.txt | awk '{print tolower($0)}' 							# to lower case
+awk '{print $1" ; "$2"\t"$3}' staff.csv								# connect 1st and 2nd columns using " ; ", connect 2nd column and 3rd column using tab
+
+# metrics pipeline examples:
+"BEGIN {FS=\"\t\"; OFS=\"\t\"} { n = split($2, a, \"[|][|]\"); for (i = 1; i <= n && i <= 7; ++i) print $1, a[i], i - 1 }"
+"BEGIN {FS=\"\t\"; OFS=\"\t\"} { split($2, a, \" ; \"); print $1, a[1], a[2], $3 }"
+
