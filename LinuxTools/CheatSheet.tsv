@@ -24,6 +24,29 @@ sort myfile.txt | uniq -dc			# List only the duplicate lines & get count
 cut -f3,6-8 filename 				# Cut(output cols 3 and 6 7 8) 
 cut -d" " -f5,1 filename 			# Cut (space is field delimiter) 
 
+## Sort and Uniq ##
+
+sort : 
+-u      去除重复行
+-t      指定分隔符（通常与 -k 联用）
+-k      指定用于排序的列号
+-f      忽略大小写
+-M      能够排序月份
+-b      忽略行首空白
+
+uniq 的作用可以描述为：针对相邻的重复行，进行相应的动作。
+这句话中，有两个地方需要注意。首先，针对的是相邻的重复行。因此，uniq 对于不相邻的重复行是不起作用的。其次，进行相应的动作。这意味着，uniq 可以做的事情很多，不止一样。
+
+cat <filename> | sort | uniq -d     # 只显示重复的行，每行只显示一次
+cat <filename> | sort | uniq -D     # 只显示重复的行
+cat <filename> | sort | uniq -i     # 忽略大小写
+cat <filename> | sort | uniq -u     # 只显示只出现一次的行
+cat <filename> | sort | uniq -c     # 统计每行重复的次数
+
+sort <file1> <file2> | uniq -d      # 交集
+sort <file1> <file2> | uniq         # 并集
+sort <file1> <file2> <file2> | uniq -u  # 差集
+sort <file1> <file2> | uniq -u  # 对称差集
 
 ## grep ##
 
