@@ -71,6 +71,8 @@ sed 1d file.txt > file.txt 			# remove header
 cut -f1 test.txt | sed 1d | awk '{print tolower($0)}' | uniq 		# 拿第一列，去header，lowercase，去重 
 cat file.txt | awk '{print tolower($0)}' 							# to lower case
 awk '{print $1" ; "$2"\t"$3}' staff.csv								# connect 1st and 2nd columns using " ; ", connect 2nd column and 3rd column using tab
+awk '{print($2,"\t",$1)}' input.txt >> output.txt     # control the output column order. 'cut' does not work. Use awk instead.
+
 
 # metrics pipeline examples:
 "BEGIN {FS=\"\t\"; OFS=\"\t\"} { n = split($2, a, \"[|][|]\"); for (i = 1; i <= n && i <= 7; ++i) print $1, a[i], i - 1 }"
